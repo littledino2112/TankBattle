@@ -1,41 +1,52 @@
 function [G, gas_station_list, heart_list] = buildgraph()
 % This builds a graph G from input matrix
-input_data = load('input_data.csv');
-input_size = size(input_data);
-row_len = input_size(1,1);
-col_len = input_size(1,2);
-G = graph; % Create empty graph
-for i=1:row_len
-   for j=1:col_len
+input_data = load('map1000.csv');
+[nrow,ncol] = size(input_data);
+max_edges = nrow*ncol*2; % Each node can connect to 2 others nodes (down and right)
+max_nodes = nrow*ncol;
+s = zeros(1,max_edges);
+d = zeros(1,max_edges);
+node_to_coordinate = cell(max_nodes,1); % Format: node_idx -> {[coordicate]}
+edge_idx = 1;
+heart_list = [];
+gas_station_list = [];
+for i=1:nrow
+   for j=1:ncol
       if (input_data(i,j) ~= 0)
-          node_name = build_node_name(i,j,input_data(i,j));
-          if (j < col_len)
+        node_idx = nrow*(i-1)+j;
+        node_to_coordinate(node_idx,:) = {[i,j]};
+        if (input_data(i,j) == 2)
+            gas_station_list = [gas_station_list node_idx]; %#ok<AGROW>
+        elseif (input_data(i,j) == 3)
+            heart_list = [heart_list node_idx]; %#ok<AGROW>
+        end
+        if (j < ncol)
             if (input_data(i,j+1) ~= 0)
-                node_name_1 = build_node_name(i,j+1,input_data(i,j+1));
-                G = addedge(G,node_name,node_name_1);
+            %                 node_name_1 = build_node_name(i,j+1,input_data(i,j+1));
+            %                 G = addedge(G,node_name,node_name_1);
+                % Create connection btw node (i,j) to (i,j+1)
+                s(edge_idx) = nrow*(i-1)+j;
+                d(edge_idx) = nrow*(i-1)+(j+1);
+                edge_idx = edge_idx + 1;
             end
-          end
-          if (i < row_len)
+        end
+        if (i < nrow)
             if (input_data(i+1,j) ~= 0)
-                node_name_2 = build_node_name(i+1,j,input_data(i+1,j));
-                G = addedge(G,node_name,node_name_2);
+            %                 node_name_2 = build_node_name(i+1,j,input_data(i+1,j));
+            %                 G = addedge(G,node_name,node_name_2);
+                % Create connection btw node (i,j) to (i+1,j)            
+                s(edge_idx) = nrow*(i-1)+j;
+                d(edge_idx) = nrow*(i)+j;
+                edge_idx = edge_idx + 1;
             end
-          end
+        end
       end
    end
 end
 
-% Find the indexes of Hearts in node array
-node_names = G.Nodes.Name;
-heart_list = [];
-gas_station_list = [];
-for idx=1:length(node_names)
-    if node_names{idx}(1) == 'H'
-        heart_list = [heart_list idx]; %#ok<AGROW>
-    elseif node_names{idx}(1) == 'G'
-        gas_station_list = [gas_station_list idx]; %#ok<AGROW>
-    end
-end
+s = s(1:edge_idx-1);
+d = d(1:edge_idx-1);
+G = graph(s,d);
 end
 
 function node_name = build_node_name(row, col, value)
