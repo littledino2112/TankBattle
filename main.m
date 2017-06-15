@@ -1,5 +1,6 @@
-% [G, gas_list, heart_list] = buildgraph();
+[G, gas_list, heart_list] = buildgraph();
 node_names = G.Nodes.Name;
+global gas_tank_max;
 gas_tank_max = 25;
 gas_tank = gas_tank_max;
 root_node = '1_1';
@@ -26,12 +27,13 @@ root_node_to_gas_stations = 0;
 root_node_to_hearts = 0;
 
 % Create edges from heart position to all gas stations within (gas_tank-dx)
+% Add root node (starting position) and create connection
 for i=1:length(heart_list)
     dis_to_gas_stations = distances(G,heart_list(i),gas_list);
     [dx, closest_gas_station] = min(dis_to_gas_stations);
     radius = gas_tank - dx;
     for j=1:length(gas_list)
-        if dis_to_gas_stations(j) <= radius
+        if dis_to_gas_stations(j) < radius
             T = addedge(T,node_names(heart_list(i)),node_names(gas_list(j)),dis_to_gas_stations(j));
         end
         if ~root_node_to_gas_stations
@@ -57,8 +59,10 @@ for i=1:length(heart_list)-1
         if ~findnode(T,node_names(heart_list(j)))
            continue; 
         end
-        [gx,dx] = nearest(T,node_names(heart_list(i)),gas_tank);
-        [gy,dy] = nearest(T,node_names(heart_list(j)),gas_tank);
+        dx = distances(T,node_names(heart_list(i)),node_names(gas_list));
+        dx = min(dx);
+        dy = distances(T,node_names(heart_list(j)),node_names(gas_list));
+        dy = min(dy);
         dxy = distances(G,node_names(heart_list(i)),node_names(heart_list(j)));
         if dxy <= (gas_tank - dx(1) - dy(1))
             T = addedge(T,node_names(heart_list(i)),node_names(heart_list(j)),dxy);
@@ -66,14 +70,12 @@ for i=1:length(heart_list)-1
     end
     if ~root_node_to_hearts
         dis_root_to_heart = distances(G,node_names(heart_list(i)),{root_node});
-        if dis_root_to_heart <= (gas_tank - dx(1))
+        if dis_root_to_heart < (gas_tank - dx(1))
             T = addedge(T,node_names(heart_list(i)),{root_node},dis_root_to_heart);
         end
     end
 end
 root_node_to_hearts = 1;
-
-% Add root node (starting position) and create connection
 
 % Find Heart position names in graph T since not all hearts in G end up in
 % T
@@ -106,17 +108,21 @@ end
 %% Traverse the final map and print out coordinates and gas tank
 step_and_fuel = {};
 for i=1:length(travel_map_T)-1
-    [path,d] = shortestpath(G,travel_map_T{i},travel_map_T{i+1});
-    path = path.';
-    fuel_left = gas_tank:-1:gas_tank-d;
-    fuel_left = fuel_left.';
-    if travel_map_T{i+1}(1) == 'G'
-        gas_tank = gas_tank_max;
-        fuel_left(end) = gas_tank;
-    else
-        gas_tank = gas_tank-d;
+    % If current location is a heart, visit its nearset gas station to
+    % refill before moving on
+    if travel_map_T{i}(1) == 'H'
+        d = distances(T,travel_map_T(i),node_names(gas_list));
+        [min_val, nearest_station] = min(d);
+        nearest_station = node_names{gas_list(nearest_station)};
+        [path,fuel_left] = find_steps_and_fuel(G,travel_map_T{i},nearest_station,gas_tank);
+        step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]]; %#ok<*AGROW>
+        gas_tank = fuel_left{end};
+        [path,fuel_left] = find_steps_and_fuel(G,nearest_station,travel_map_T{i},gas_tank);
+        step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];
+        gas_tank = fuel_left{end};
     end
-    fuel_left = num2cell(fuel_left);
+    [path,fuel_left] = find_steps_and_fuel(G,travel_map_T{i},travel_map_T{i+1},gas_tank);
+    gas_tank = fuel_left{end};
     step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];
 end
 
@@ -133,3 +139,16 @@ function traverse_mst(graph, node)
     end
 end
 
+%% Function to find what step to take and fuel left from node A to B
+function [steps, fuel] = find_steps_and_fuel(graph,node_1,node_2,current_gas_tank)
+    global gas_tank_max;
+    [steps,d] = shortestpath(graph,node_1,node_2);
+    steps = steps.';
+    fuel = current_gas_tank:-1:current_gas_tank-d;
+    fuel = fuel.';
+    if node_2(1) == 'G'
+        current_gas_tank = gas_tank_max;
+        fuel(end) = current_gas_tank;
+    end
+    fuel = num2cell(fuel);
+end
