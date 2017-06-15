@@ -144,6 +144,9 @@ for i=1:length(travel_map_T)-1
     step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];
 end
 
+result = node_to_coordinate(step_and_fuel(:,1));
+result = cell2table(result);
+writetable(result,'result.txt','Delimiter',' ','WriteVariableNames',0);
 
 %%
 function traverse_mst(graph, node)
