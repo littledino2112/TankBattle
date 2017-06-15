@@ -1,6 +1,5 @@
-function [G, node_to_coordinate, gas_station_list, heart_list, nrow, ncol] = buildgraph()
+function [G, node_to_coordinate, gas_station_list, heart_list, nrow, ncol] = buildgraph(input_data)
 % This builds a graph G from input matrix
-input_data = load('input_data.csv');
 [nrow,ncol] = size(input_data);
 max_edges = nrow*ncol*2; % Each node can connect to 2 others nodes (down and right)
 max_nodes = nrow*ncol;
