@@ -114,7 +114,12 @@ traverse_mst(directed_mintree,root_node_name);
 travel_map_T = {};
 for i=1:length(travel_map)-1
     p = shortestpath(T,travel_map{i},travel_map{i+1});
-    travel_map_T = [travel_map_T p(1:end-1)]; %#ok<AGROW>
+    if (i == length(travel_map) - 1)
+        travel_map_T = [travel_map_T p(1:end)]; %#ok<AGROW>
+    else
+        travel_map_T = [travel_map_T p(1:end-1)]; %#ok<AGROW>
+    end
+    
 end
 travel_map_T(1) = {root_node_node_id};
 % for i=2:length(travel_map_T)
@@ -141,7 +146,12 @@ for i=1:length(travel_map_T)-1
     end
     [path,fuel_left] = find_steps_and_fuel(G,travel_map_T{i},travel_map_T{i+1},gas_tank);
     gas_tank = fuel_left(end);
-    step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];
+    if (i == length(travel_map_T)-1)
+        step_and_fuel = [step_and_fuel; [path(1:end),fuel_left(1:end)]];
+    else
+        step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];       
+    end
+ 
 end
 
 result = node_to_coordinate(step_and_fuel(:,1));
