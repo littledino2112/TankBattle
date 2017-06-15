@@ -1,8 +1,9 @@
-input_data = load('/Users/NHua/Documents/01_Work/07_Misfit/10_Misc/12_ShortestPath/input_data.csv');
+function [G, gas_station_list, heart_list] = buildgraph()
+% This builds a graph G from input matrix
+input_data = load('input_data.csv');
 input_size = size(input_data);
 row_len = input_size(1,1);
 col_len = input_size(1,2);
-% node_list = {};
 G = graph; % Create empty graph
 for i=1:row_len
    for j=1:col_len
@@ -20,8 +21,21 @@ for i=1:row_len
                 G = addedge(G,node_name,node_name_2);
             end
           end
-      end    
+      end
    end
+end
+
+% Find the indexes of Hearts in node array
+node_names = G.Nodes.Name;
+heart_list = [];
+gas_station_list = [];
+for idx=1:length(node_names)
+    if node_names{idx}(1) == 'H'
+        heart_list = [heart_list idx]; %#ok<AGROW>
+    elseif node_names{idx}(1) == 'G'
+        gas_station_list = [gas_station_list idx]; %#ok<AGROW>
+    end
+end
 end
 
 function node_name = build_node_name(row, col, value)
@@ -31,4 +45,9 @@ function node_name = build_node_name(row, col, value)
     elseif (value == 3)
         node_name = ['H_' node_name];   % Heart
     end
+end
+
+function distance = compute_distance_btw_hearts(graph, heart_list)
+    d_heart = distances(graph,heart_list,heart_list);
+    distance = d_heart;
 end
