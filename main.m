@@ -44,32 +44,41 @@ root_node_to_hearts = 0;
 
 % Create edges from heart position to all gas stations within (gas_tank-dx)
 % Add root node (starting position) and create connection
-s = {};
-t = {};
-w = [];
+max_edges = nrow*ncol;
+s = cell(max_edges,1);
+t = cell(max_edges,1);
+w = zeros(max_edges,1);
+edge_idx = 1;
+distances_hearts_to_gas_stations = distances(G,heart_list,gas_list);
+distances_root_to_gas_stations = distances(G,root_node_node_id,gas_list);
 correspondent_nearest_gas_stations = zeros(length(heart_list),2); % station_idx | dx
 for i=1:length(heart_list)
-    distance_to_gas_stations = distances(G,heart_list(i),gas_list);
+    distance_to_gas_stations = distances_hearts_to_gas_stations(i,:);
     [dx, closest_gas_station] = min(distance_to_gas_stations);
     correspondent_nearest_gas_stations(i,:) = [closest_gas_station, dx];
     radius = gas_tank - dx;
     for j=1:length(gas_list)
         if distance_to_gas_stations(j) < radius
-            s = [s, heart_list_name(i)];
-            t = [t, gas_list_name(j)];
-            w = [w, distance_to_gas_stations(j)];
+            s(edge_idx) = heart_list_name(i);
+            t(edge_idx) = gas_list_name(j);
+            w(edge_idx) = distance_to_gas_stations(j);
+            edge_idx = edge_idx + 1;
         end
         if ~root_node_to_gas_stations
-            distance_root_to_gas = distances(G,gas_list(j),root_node_node_id);
+            distance_root_to_gas = distances_root_to_gas_stations(root_node_node_id,j);
             if  distance_root_to_gas <= gas_tank
-                s = [s, {root_node_name}];
-                t = [t, gas_list_name(j)];
-                w = [w, distance_root_to_gas];
+                s(edge_idx) = {root_node_name};
+                t(edge_idx) = gas_list_name(j);
+                w(edge_idx) = distance_root_to_gas;
+                edge_idx = edge_idx + 1;
             end
         end
     end
     root_node_to_gas_stations = 1;
 end
+s = s(1:edge_idx-1);
+t = t(1:edge_idx-1);
+w = w(1:edge_idx-1);
 T = addedge(T,s,t,w);
 
 % Create edges from heart to heart if distance btw them (in original graph
