@@ -157,6 +157,7 @@ for i=1:length(travel_map_T)-1
     % refill before moving on
     destination = 0;
     source = 0;
+    current_location = travel_map_T{i};
     if travel_map_T{i}(1) == 'H'
         temp = travel_map_T(i);
         idx = find(strcmp(heart_list_name,temp));
@@ -165,11 +166,9 @@ for i=1:length(travel_map_T)-1
         [path,fuel_left] = find_steps_and_fuel(G,travel_map_T{i},nearest_station,gas_tank);
         step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]]; %#ok<*AGROW>
         gas_tank = fuel_left(end);
-        [path,fuel_left] = find_steps_and_fuel(G,nearest_station,travel_map_T{i},gas_tank);
-        step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];
-        gas_tank = fuel_left(end);
+        current_location = nearest_station;
     end
-    [path,fuel_left] = find_steps_and_fuel(G,travel_map_T{i},travel_map_T{i+1},gas_tank);
+    [path,fuel_left] = find_steps_and_fuel(G,current_location,travel_map_T{i+1},gas_tank);
     gas_tank = fuel_left(end);
     if (i == length(travel_map_T)-1)
         step_and_fuel = [step_and_fuel; [path(1:end),fuel_left(1:end)]];
