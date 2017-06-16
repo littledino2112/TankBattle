@@ -74,37 +74,43 @@ T = addedge(T,s,t,w);
 % Create edges from heart to heart if distance btw them (in original graph
 % G) is at most (gas_tank - dx - dy) with dx,dy is the distance to the
 % closest gas station of x and y, respectively
-s = {};
-t = {};
-w = [];
-for i=1:length(heart_list)-1
-    if ~findnode(T,heart_list_name(i))
-           continue; 
-    end
-    dx = correspondent_nearest_gas_stations(i,2);
-    for j=i+1:length(heart_list)
-        if ~findnode(T,heart_list_name(j))
-           continue; 
+% If there're too many hearts, bypass this step since there're too many
+% connections to create
+if (length(heart_list) < 2000)
+    s = {};
+    t = {};
+    w = [];
+    for i=1:length(heart_list)-1
+        if ~findnode(T,heart_list_name(i))
+               continue; 
         end
-        dy = correspondent_nearest_gas_stations(j,2);
-        dxy = distances(G,heart_list(i),heart_list(j));
-        if dxy <= (gas_tank - dx - dy)
-            s = [s, heart_list_name(i)];
-            t = [t, heart_list_name(j)];
-            w = [w, dxy];
+        dx = correspondent_nearest_gas_stations(i,2);
+        for j=i+1:length(heart_list)
+            if ~findnode(T,heart_list_name(j))
+               continue; 
+            end
+            dy = correspondent_nearest_gas_stations(j,2);
+            dxy = distances(G,heart_list(i),heart_list(j));
+            if dxy <= (gas_tank - dx - dy)
+                s = [s, heart_list_name(i)];
+                t = [t, heart_list_name(j)];
+                w = [w, dxy];
+            end
+        end
+
+        if ~root_node_to_hearts
+            distance_root_to_heart = distances(G,heart_list(i),root_node_node_id);
+            if distance_root_to_heart < (gas_tank - dx)
+                s = [s, heart_list_name(i)];
+                t = [t, {root_node_name}];
+                w = [w, distance_root_to_heart];            
+            end
         end
     end
-    if ~root_node_to_hearts
-        distance_root_to_heart = distances(G,heart_list(i),root_node_node_id);
-        if distance_root_to_heart < (gas_tank - dx)
-            s = [s, heart_list_name(i)];
-            t = [t, {root_node_name}];
-            w = [w, distance_root_to_heart];            
-        end
-    end
+    root_node_to_hearts = 1;
+    T = addedge(T,s,t,w);    
 end
-root_node_to_hearts = 1;
-T = addedge(T,s,t,w);
+
 
 % Find Heart position names in graph T since not all hearts in G end up in
 % T
@@ -151,8 +157,9 @@ for i=1:length(travel_map_T)-1
     destination = 0;
     source = 0;
     if travel_map_T{i}(1) == 'H'
-        d = distances(T,travel_map_T(i),gas_list_name);
-        [min_val, nearest_station_idx] = min(d);
+        temp = travel_map_T(i);
+        idx = find(strcmp(heart_list_name,temp));
+        nearest_station_idx = correspondent_nearest_gas_stations(idx,1);
         nearest_station = gas_list_name{nearest_station_idx};
         [path,fuel_left] = find_steps_and_fuel(G,travel_map_T{i},nearest_station,gas_tank);
         step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]]; %#ok<*AGROW>
