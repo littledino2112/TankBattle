@@ -168,21 +168,69 @@ for i=1:length(travel_map_T)-1
     source = 0;
     current_location = travel_map_T{i};
     if travel_map_T{i}(1) == 'H'
-        temp = travel_map_T(i);
-        idx = find(strcmp(heart_list_name,temp));
-        nearest_station_idx = correspondent_nearest_gas_stations(idx,1);
-        nearest_station = gas_list_name{nearest_station_idx};
-        [path,fuel_left] = find_steps_and_fuel(G,travel_map_T{i},nearest_station,gas_tank);
-        step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]]; %#ok<*AGROW>
-        gas_tank = fuel_left(end);
-        current_location = nearest_station;
-    end
-    [path,fuel_left] = find_steps_and_fuel(G,current_location,travel_map_T{i+1},gas_tank);
-    gas_tank = fuel_left(end);
-    if (i == length(travel_map_T)-1)
-        step_and_fuel = [step_and_fuel; [path(1:end),fuel_left(1:end)]];
+        %In case the next location need to go is Heart, so we need to check the
+        %left fuel is enough or not
+        if travel_map_T{i+1} (1) == 'H'
+            [steps,length_2_nearest_H] = shortestpath(G,str2double(travel_map_T{i}(3:end)),str2double(travel_map_T{i+1}(3:end)));
+            idx = find(strcmp(heart_list_name,travel_map_T(i+1)));
+            nearest_H_2_nearest_gas = correspondent_nearest_gas_stations(idx, 2);
+            if ((length_2_nearest_H + nearest_H_2_nearest_gas +1) < gas_tank)
+                [path,fuel_left] = find_steps_and_fuel(G,current_location,travel_map_T{i+1},gas_tank);
+                gas_tank = fuel_left(end);
+                step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];
+            else
+                %goto nearest gas station
+                temp = travel_map_T(i);
+                idx = find(strcmp(heart_list_name,temp));
+                nearest_station_idx = correspondent_nearest_gas_stations(idx,1);
+                nearest_station = gas_list_name{nearest_station_idx};
+                [path,fuel_left] = find_steps_and_fuel(G,travel_map_T{i},nearest_station,gas_tank);
+                step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]]; %#ok<*AGROW>
+                gas_tank = fuel_left(end);
+                current_location = nearest_station;
+                %Goto heart
+                [path,fuel_left] = find_steps_and_fuel(G,current_location,travel_map_T{i+1},gas_tank);
+                gas_tank = fuel_left(end);
+                step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];
+            end
+        else
+            %If next stop is gas station:
+            %   -Check the fuel left before go to gas station
+            %   -If fuel left is not enough so go to the nearest gas staion
+            %   then go to the index + 1
+            [steps,length_2_next_stop] = shortestpath(G,str2double(travel_map_T{i}(3:end)),str2double(travel_map_T{i+1}(3:end)));
+            if (length_2_next_stop < gas_tank)
+                [path,fuel_left] = find_steps_and_fuel(G,current_location,travel_map_T{i+1},gas_tank);
+                gas_tank = fuel_left(end);
+                if (i == length(travel_map_T)-1)
+                    step_and_fuel = [step_and_fuel; [path(1:end),fuel_left(1:end)]];
+                else
+                    step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];       
+                end
+            else
+                 %goto nearest gas station
+                temp = travel_map_T(i);
+                idx = find(strcmp(heart_list_name,temp));
+                nearest_station_idx = correspondent_nearest_gas_stations(idx,1);
+                nearest_station = gas_list_name{nearest_station_idx};
+                [path,fuel_left] = find_steps_and_fuel(G,travel_map_T{i},nearest_station,gas_tank);
+                step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]]; %#ok<*AGROW>
+                gas_tank = fuel_left(end);
+                current_location = nearest_station;
+                %Goto next index
+                [path,fuel_left] = find_steps_and_fuel(G,current_location,travel_map_T{i+1},gas_tank);
+                gas_tank = fuel_left(end);
+                step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];
+            end
+        end
     else
-        step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];       
+        [path,fuel_left] = find_steps_and_fuel(G,current_location,travel_map_T{i+1},gas_tank);
+        gas_tank = fuel_left(end);
+        if (i == length(travel_map_T)-1)
+            step_and_fuel = [step_and_fuel; [path(1:end),fuel_left(1:end)]];
+        else
+            step_and_fuel = [step_and_fuel; [path(1:end-1),fuel_left(1:end-1)]];       
+        end
     end
  
 end
