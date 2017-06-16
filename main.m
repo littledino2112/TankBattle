@@ -1,5 +1,5 @@
 global gas_tank_max;
-input_file = 'map1000.data';
+input_file = 'map50.data';
 root_node_coordinate = dlmread(input_file,' ',[0 0 0 1]);
 gas_tank_max = dlmread(input_file,' ',[1 0 1 0]);
 gas_tank = gas_tank_max;
@@ -7,6 +7,7 @@ raw_map = dlmread(input_file,' ',3,0);
 [G, node_to_coordinate, gas_list, heart_list, nrow, ncol] = buildgraph(raw_map);
 root_node_node_id = coordinate_to_node_idx(root_node_coordinate,nrow);
 root_node_name = num2str(root_node_node_id);
+large_graph_limit = 400*400;
 
 
 
@@ -76,7 +77,7 @@ T = addedge(T,s,t,w);
 % closest gas station of x and y, respectively
 % If there're too many hearts, bypass this step since there're too many
 % connections to create
-if (length(heart_list) < 2000)
+if (nrow*ncol < large_graph_limit)
     s = {};
     t = {};
     w = [];
